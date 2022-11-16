@@ -371,7 +371,7 @@ func getBlobFromContext(ctx *context.Context) (*packages_model.PackageFileDescri
 // https://github.com/opencontainers/distribution-spec/blob/main/spec.md#checking-if-content-exists-in-the-registry
 func HeadBlob(ctx *context.Context) {
 	blob, err := getBlobFromContext(ctx)
-	fmt.Println("HeadBlob: ", blob.File.CompositeKey)
+	fmt.Println("HeadBlob: ", ctx.Params("digest"))
 	if err != nil {
 		fmt.Println("getBlobFromContext err: ", err.Error())
 		if err == container_model.ErrContainerBlobNotExist {
