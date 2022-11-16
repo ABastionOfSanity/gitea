@@ -23,7 +23,7 @@ import (
 // The uploaded blob gets stored in a special upload version to link them to the package/image
 func saveAsPackageBlob(hsr packages_module.HashedSizeReader, pi *packages_service.PackageInfo) (*packages_model.PackageBlob, error) {
 	pb := packages_service.NewPackageBlob(hsr)
-
+	fmt.Println("saveAsPackageBlob: ", pb.HashSHA256)
 	exists := false
 
 	contentStore := packages_module.NewContentStore()
@@ -45,7 +45,7 @@ func saveAsPackageBlob(hsr packages_module.HashedSizeReader, pi *packages_servic
 				return err
 			}
 		}
-
+		fmt.Println("CREATED!!!")
 		if created {
 			if _, err := packages_model.InsertProperty(ctx, packages_model.PropertyTypePackage, p.ID, container_module.PropertyRepository, strings.ToLower(pi.Owner.LowerName+"/"+pi.Name)); err != nil {
 				log.Error("Error setting package property: %v", err)
@@ -72,6 +72,16 @@ func saveAsPackageBlob(hsr packages_module.HashedSizeReader, pi *packages_servic
 		if err != nil {
 			log.Error("Error inserting package blob: %v", err)
 			return err
+		}
+		if exists {
+			_, err := contentStore.Get(packages_module.BlobHash256Key(pb.HashSHA256))
+			if err != nil {
+				log.Info("BLOB MODEL and ERR in ContentStore.  Resaving Blob to content store ", err.Error())
+				if err := contentStore.Save(packages_module.BlobHash256Key(pb.HashSHA256), hsr, hsr.Size()); err != nil {
+					log.Error("Error saving package blob in content store during FIXITUP: %v", err)
+					return err
+				}
+			}
 		}
 		if !exists {
 			if err := contentStore.Save(packages_module.BlobHash256Key(pb.HashSHA256), hsr, hsr.Size()); err != nil {

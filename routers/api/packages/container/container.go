@@ -379,7 +379,23 @@ func HeadBlob(ctx *context.Context) {
 		}
 		return
 	}
+	//check if actually in ContentStore
+	//if not, delete Blob and return 404
+	//content_store.Get()
+	cStore := packages_module.NewContentStore()
+	configReader, err := cStore.Get(packages_module.BlobHash256Key(blob.Blob.HashSHA256))
+	if err != nil {
+		log.Warn("ContentStore Get Error while HEAD for Blob: ", blob.Blob.HashSHA256, err.Error())
 
+		digest := ctx.Params("digest")
+
+		if err := deleteBlob(ctx.Package.Owner.ID, ctx.Params("image"), digest); err != nil {
+			log.Warn("Error while deleteBlob in HEAD: ", err.Error())
+		}
+		apiErrorDefined(ctx, errBlobUnknown)
+		return
+	}
+	defer configReader.Close()
 	setResponseHeaders(ctx.Resp, &containerHeaders{
 		ContentDigest: blob.Properties.GetByName(container_module.PropertyDigest),
 		ContentLength: blob.Blob.Size,

@@ -224,7 +224,6 @@ func NewPackageBlob(hsr packages_module.HashedSizeReader) *packages_model.Packag
 
 func addFileToPackageVersion(ctx context.Context, pv *packages_model.PackageVersion, pfci *PackageFileCreationInfo) (*packages_model.PackageFile, *packages_model.PackageBlob, bool, error) {
 	log.Trace("Adding package file: %v, %s", pv.ID, pfci.Filename)
-
 	pb, exists, err := packages_model.GetOrInsertBlob(ctx, NewPackageBlob(pfci.Data))
 	if err != nil {
 		log.Error("Error inserting package blob: %v", err)
