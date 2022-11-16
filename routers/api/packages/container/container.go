@@ -371,7 +371,9 @@ func getBlobFromContext(ctx *context.Context) (*packages_model.PackageFileDescri
 // https://github.com/opencontainers/distribution-spec/blob/main/spec.md#checking-if-content-exists-in-the-registry
 func HeadBlob(ctx *context.Context) {
 	blob, err := getBlobFromContext(ctx)
+	fmt.Println("HeadBlob: ", blob.File.CompositeKey)
 	if err != nil {
+		fmt.Println("getBlobFromContext err: ", err.Error())
 		if err == container_model.ErrContainerBlobNotExist {
 			apiErrorDefined(ctx, errBlobUnknown)
 		} else {
@@ -379,7 +381,31 @@ func HeadBlob(ctx *context.Context) {
 		}
 		return
 	}
+	//check if actually in ContentStore
+	//if not, delete Blob and return 404
+	//content_store.Get()
+	cStore := packages_module.NewContentStore()
+	configReader, err := cStore.Get(packages_module.BlobHash256Key(blob.Blob.HashSHA256))
+	if err != nil {
+		fmt.Println("ContentStore Get Error: ", blob.Blob.HashSHA256, err.Error())
 
+		digest := ctx.Params("digest")
+
+		if !oci.Digest(digest).Validate() {
+			fmt.Println("digest Validate false: ", digest)
+			//apiErrorDefined(ctx, errBlobUnknown)
+			//return
+		}
+
+		if err := deleteBlob(ctx.Package.Owner.ID, ctx.Params("image"), digest); err != nil {
+			fmt.Println("Error while deleteBlob: ", err.Error())
+			//apiError(ctx, http.StatusInternalServerError, err)
+			//return
+		}
+		apiErrorDefined(ctx, errBlobUnknown)
+		return
+	}
+	defer configReader.Close()
 	setResponseHeaders(ctx.Resp, &containerHeaders{
 		ContentDigest: blob.Properties.GetByName(container_module.PropertyDigest),
 		ContentLength: blob.Blob.Size,

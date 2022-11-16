@@ -5,6 +5,7 @@
 package packages
 
 import (
+	"fmt"
 	"io"
 	"path"
 
@@ -27,11 +28,13 @@ func NewContentStore() *ContentStore {
 
 // Get gets a package blob
 func (s *ContentStore) Get(key BlobHash256Key) (storage.Object, error) {
+	fmt.Println("Get from ContentStore: ", key)
 	return s.store.Open(KeyToRelativePath(key))
 }
 
 // Save stores a package blob
 func (s *ContentStore) Save(key BlobHash256Key, r io.Reader, size int64) error {
+	fmt.Println("Save to ContentStore: ", key)
 	_, err := s.store.Save(KeyToRelativePath(key), r, size)
 	return err
 }
