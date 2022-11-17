@@ -75,6 +75,14 @@ func saveAsPackageBlob(hsr packages_module.HashedSizeReader, pi *packages_servic
 		}
 		if exists {
 			fmt.Println("BLOB MODEL EXISTS!!! ", pb.HashSHA256)
+			_, err := contentStore.Get(packages_module.BlobHash256Key(pb.HashSHA256))
+			if err != nil {
+				fmt.Println("BLOB MODEL and ERR in ContentStore.  Resaving Blob to content store ", err.Error())
+				if err := contentStore.Save(packages_module.BlobHash256Key(pb.HashSHA256), hsr, hsr.Size()); err != nil {
+					log.Error("Error saving package blob in content store during FIXITUP: %v", err)
+					return err
+				}
+			}
 		}
 		if !exists {
 			if err := contentStore.Save(packages_module.BlobHash256Key(pb.HashSHA256), hsr, hsr.Size()); err != nil {
